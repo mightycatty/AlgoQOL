@@ -12,7 +12,7 @@ import os
 import dashscope
 from dashscope import MultiModalConversation
 
-dashscope.api_key = "sk-3c8beae63c2b48c5b5feaa210c53ee32"
+dashscope.api_key = ''
 
 
 def qwenvl_call(img_list,
