@@ -1,0 +1,29 @@
+.idea/
+*.egg-info/
+*/__pycache__/*
+./build
+# model
+*.mnn
+#*.pb
+*.onnx
+*.h5
+*.index
+*.meta
+*.ckpt.*
+*.tflite
+*.cpython*
+# files
+*.jpg
+*.png
+*.mp4
+*.txt
+*.pth
+*.onnx
+*.pt
+*.webp
+*.zip
+*.pkl
+*.csv
+*.tsv
+./debug
+./build
