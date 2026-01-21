@@ -1,0 +1,92 @@
+# 🧹 Image Dedup with CLIP + Faiss
+
+A simple yet efficient script to dedup your image datasets using CLIP/SigLIP embeddings + Faiss.
+
+## ⚙️ Setup
+
+```bash
+conda install -c conda-forge faiss-gpu
+# Additional dependencies
+# torch transformers fire loguru pillow matplotlib tqdm
+```
+
+## ✨ Features
+
+- Multi-GPU support
+- Fast similarity search using Faiss (with GPU)
+- ✅ Supported vision models
+
+```python
+_OPENAI_CLIP = [
+    'openai/clip-vit-base-patch32',
+    'openai/clip-vit-large-patch14',
+    'openai/clip-vit-base-patch16',
+    'openai/clip-vit-large-patch14-336',
+]
+
+_SIGLIP_MODEL = [
+    'google/siglip-base-patch16-224',  # Default
+    'google/siglip-so400m-patch14-384',
+]
+```
+
+## 🚀 Quick Start
+
+View CLI options:
+
+```bash
+python image_dedup.py -h
+```
+
+Sample output:
+
+```
+NAME
+    image_dedup.py - Main deduplication pipeline.
+
+SYNOPSIS
+    image_dedup.py ROOT <flags>
+
+POSITIONAL ARGUMENTS
+    ROOT                Root directory containing images
+
+FLAGS
+    --model             CLIP model name (default: google/siglip-base-patch16-224)
+    -t, --threshold     Similarity threshold [0.0-1.0] (default: 0.95)
+    -b, --batch_size    Batch size for feature extraction (default: 256)
+    -c, --cpu_index     Force CPU index instead of GPU (default: False)
+    -d, --debug         Debug mode (use fewer images, enable gallery)
+    --move_out          Directory to move duplicates (if unset, duplicates are deleted)
+    -s, --skip_gallery_vis  Skip similarity gallery visualization
+```
+
+It's recommend to run in debug mode to pick a threshold suitable for your dataset
+
+```bash
+#This will generate a few similarity gallery images under the ${root}.
+python image_dedup.py \
+    --root ./dataset/images \
+    --model google/siglip-base-patch16-224 \
+    --debug
+```
+
+Then go ahead with:
+
+```bash
+python image_dedup.py \
+    --root ./dataset/images \
+    --model google/siglip-base-patch16-224 \
+    --threshold 0.96 \
+    --batch_size 128 \
+    --move_out ./duplicates \
+    --skip_gallery_vis
+```
+
+## 📌 Notes
+
+- If `--move_out` is not set, duplicate images will be deleted.
+- set `--skip_gallery_vis` flag to true to skip generating similarity gallery again 
+
+---
+
+MIT License | © 2025 Your Name

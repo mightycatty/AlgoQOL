@@ -1,0 +1,195 @@
+# -*- coding: utf-8 -*-
+import time
+
+import torch
+from transformers import Qwen2VLForConditionalGeneration, AutoTokenizer, AutoProcessor
+from qwen_vl_utils import process_vision_info
+from typing import List, Union
+import os
+from openai import OpenAI
+import dashscope
+from dashscope import MultiModalConversation
+
+API_KEY = "xxxxx"
+dashscope.api_key = API_KEY
+
+
+def qwen_api_call(
+        prompt: str,
+        img_list: Union[List[str], str] = None,
+        verbose=False,
+        model='qwen-vl-max',
+):
+    """
+    request Qwen API from aliyun
+    ref: https://bailian.console.aliyun.com/?spm=5176.29619931.J__Z58Z6CX7MY__Ll8p1ZOR.1.7e9759fcEgtv3U#/model-market/detail/qwen-max-latest?tabKey=sdk
+    """
+    if model == 'qwen-vl-max':
+        if not isinstance(img_list, list):
+            img_list = [img_list]
+        images_content = [{'image': item} for item in img_list]
+        messages = [{
+            'role': 'user',
+            'content': [
+                *images_content,
+                {
+                    'text': prompt,
+                },
+            ]
+        }]
+        response = MultiModalConversation.call(model=model, messages=messages)
+        answer = response.output.choices[0].message.content[0]['text']
+    elif model == 'qwen-max':
+        messages = [
+            {'role': 'system', 'content': 'You are a helpful assistant.'},
+            {'role': 'user', 'content': prompt}
+        ]
+        response = dashscope.Generation.call(model=model, messages=messages)
+        answer = response.output.text
+    else:
+        raise NotImplementedError('model not supported')
+    if verbose:
+        print(response)
+    return answer
+
+
+class Qwenvl2:
+    """ref: https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct
+    pip install qwen-vl-utils
+
+    msg example:
+
+    image: [
+        {
+            "role": "user",
+            "content": [
+                # {
+                #     "type": "image",
+                #     "image": "{}",
+                # },
+                # {"type": "text", "text": "{}"},
+            ],
+        }
+    ]
+
+    video:
+    [
+    {
+        "role": "user",
+        "content": [
+            {
+                "type": "video",
+                "video": [
+                    "file:///path/to/frame1.jpg",
+                    "file:///path/to/frame2.jpg",
+                    "file:///path/to/frame3.jpg",
+                    "file:///path/to/frame4.jpg",
+                ],
+                "fps": 1.0,
+            },
+            {"type": "text", "text": "Describe this video."},
+        ],
+    }
+]
+
+    """
+    MESSAGE_TEMPLATE = [
+        {
+            "role": "user",
+            "content": [
+                # {
+                #     "type": "image",
+                #     "image": "{}",
+                # },
+                # {"type": "text", "text": "{}"},
+            ],
+        }
+    ]
+
+    def __init__(self, pretrained_model_name_or_path='Qwen/Qwen2-VL-72B-Instruct'):
+        # We recommend enabling flash_attention_2 for better acceleration and memory saving, especially in multi-image and video scenarios.
+        self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+            pretrained_model_name_or_path,
+            torch_dtype=torch.float16,
+            # attn_implementation="flash_attention_2",
+            device_map="auto",
+        )
+
+        # default processer
+        self.processor = AutoProcessor.from_pretrained(pretrained_model_name_or_path)
+
+        # The default range for the number of visual tokens per image in the model is 4-16384. You can set min_pixels and max_pixels according to your needs, such as a token count range of 256-1280, to balance speed and memory usage.
+        # min_pixels = 256*28*28
+        # max_pixels = 1280*28*28
+        # processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-7B-Instruct", min_pixels=min_pixels, max_pixels=max_pixels)
+
+    def __call__(self, prompt: str, images: Union[str, List[str]], *args, **kwargs):
+        text_msg = {"type": "text", "text": f"{prompt}"}
+        if not isinstance(images, list): images = [images]
+        content = []
+        for image_item in images:
+            content.append({"type": "image", "image": f"{image_item}"})
+        content.append(text_msg)
+        messages = self.MESSAGE_TEMPLATE.copy()
+        messages[0]["content"] = content
+
+        # Preparation for inference
+        text = self.processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        image_inputs, video_inputs = process_vision_info(messages)
+        # import pdb;pdb.set_trace()
+        inputs = self.processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            padding=True,
+            return_tensors="pt",
+            
+
+        )
+        # inputs = inputs.to(self.device)
+
+        # Inference: Generation of the output
+        generated_ids = self.model.generate(**inputs, max_new_tokens=1024)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = self.processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+        if len(output_text) == 1: output_text = output_text[0]
+        return output_text
+
+
+def openai_ollama(prompt, model='qwen2.5:7b', base_url='http://localhost:11435/v1/', verbose=False):
+    """
+    start ollama server:
+        env OLLAMA_HOST=0.0.0.0:11435 ollama serve &
+        env OLLAMA_HOST=0.0.0.0:11435 ollama run qwen2.5:72b
+    """
+    from openai import OpenAI
+    client = OpenAI(
+        base_url=base_url,
+        api_key='ollama',  # required but ignored
+    )
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {'role': 'system', 'content': 'You are a helpful assistant.'},
+            {
+                'role': 'user',
+                'content': prompt,
+            }
+        ],
+        model=model,
+    )
+    if verbose:
+        print(chat_completion)
+    response = chat_completion.choices[0].message.content
+    return response
+
+
+if __name__ == '__main__':
+    qwenvl_model = Qwenvl2()
+    while True:
+        print(qwenvl_model("what's in the image", 'test.jpg'))
