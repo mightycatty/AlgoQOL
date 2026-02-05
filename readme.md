@@ -1,61 +1,82 @@
-# QOL for Algo Dev
+# 🚀 QOL for Algo Dev
 
-All in one of QOL for Algo Developer
+All-in-one QOL toolkit for Algorithm Developers 🛠️
 
-## Quick Start
-### Agent skill installation(Recommend)
-Install and use with LLM CLI(it will install the package automatically)
+## ✨ Features
 
-- Gemini Skill Installation
+### 📊 Dataset Management
+*   **Analysis & Splitting**: Summarise statistics (`coco-analyse`) and split datasets (`coco-split`).
+*   **Format Conversion**: Convert YOLO/YOLOv8 to COCO (`yolo2coco`, `yolov8-to-coco`).
+*   **Data Cleaning**: Handle negative samples (`remove-yolo-none-pair`).
+
+### 🖼️ Image Processing
+*   **Deduplication**: Remove duplicates using CLIP/SigLIP or pHash (`image-dedup`).
+*   **Quality Control**: Identify and remove corrupted images (`image-cleanup`).
+*   **Batch Processing**: Resize (`image-resize`) and reformat (`image-reformat`) images efficiently.
+
+### 📂 File Operations
+*   **Management**: Multi-threaded downloader (`download`), directory merging (`merge-files`), and UUID renaming (`rename-files`).
+
+### 🤖 Algorithm SDK & Modules
+
+#### 👁️ Computer Vision (CV)
+*   **Detection (DET)**:
+    *   **Inference Wrappers**: `Yolov8DetTorch` (YOLOv8 inference with custom NMS).
+    *   **Format Converters**: COCO <-> YOLO, LabelMe -> YOLO, OCR -> YOLO.
+    *   **Utilities**: COCO JSON browsing, YOLO TXT browsing.
+*   **OCR**:
+    *   **Data Utils**: Train/Val splitter for PaddleOCR datasets.
+*   **Classification (CLS)**:
+    *   **Metrics**: `cls_report` for calculating Precision, Recall, ROC, and AP.
+
+#### 🧠 Multimodal (LLM/VLM)
+*   **VLLM Client**: `VLLMClient` for interacting with OpenAI-compatible APIs (vLLM), supporting Text + Image + Video inputs.
+*   **Robust Parsing**:
+    *   `parse_llm_json`: Extract and repair JSON from buggy LLM outputs.
+    *   `parse_cot_response`: Parse "Chain of Thought" (`<think>...</think>`) responses.
+*   **confidence Scoring**:
+    *   Calculate confidence scores for Boolean, Integer, or List outputs using Logprobs (`get_bool_value_score`, `get_int_value_score`).
+
+## ⚡ Quick Start
+
+### 🤖 Agent Skill Installation (Recommended)
+The agent will automatically discover the correct CLI commands (using `algo-qol --help`), check for installation, and execute the tasks securely.
+
+- **Gemini Skill Installation**
 ```bash
 gemini skills install https://github.com/mightycatty/algo_qol.git --path agent/skills/algo-qol
 ```
-- Other CLI Installation
+- **Other CLI Installation**
 
 `TODO`
 
-### PIP Installation
+### 📦 PIP Installation
 ```bash
 pip install -r requirement.txt
 pip install -e .
 ```
-### Usage Example
-**Gemini CLI**
+
+### 💡 Usage Example
+
+**🧠 Gemini CLI**
 ```bash
 gemini -p "Use algo-qol to reformat all images in the ./images folder to JPG format."
 gemini -p "Use algo-qol to split the YOLO dataset at ./yolo_dataset.txt into training and validation sets with a 9:1 ratio."
 ```
 
-**CMD CLI**
+**💻 CMD CLI**
 ```bash
 > algo-qol --help
 
 # Usage: algo-qol [OPTIONS] COMMAND [ARGS]...
-#
-#╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-#│ --install-completion          Install completion for the current shell.                                                                                   │
-#│ --show-completion             Show completion for the current shell, to copy it or customize the installation.                                            │
-#│ --help                        Show this message and exit.                                                                                                 │
-#╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-#╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-#│ coco-analyse            Analyzes a COCO detection format dataset and returns a dictionary containing various statistics.                                  │
-#│ coco-split                                                                                                                                                │
-#│ convert-image-format    convert all images in a folder to dst format, support sub-folders                                                                 │
-#│ download                download images or videos from give txt or csv                                                                                    │
-#│ merge-files             merge all files in a folder(include sub-folders) to a new folder                                                                  │
-#│ remove-yolo-none-pair                                                                                                                                     │
-#│ rename-files            rename all images in a folder to uuid new name                                                                                    │
-#│ rm-corrupted-image      remove corrupted images                                                                                                           │
-#│ rm-duplicated-image                                                                                                                                       │
-#│ yolo2coco                                                                                                                                                 │
-#│ yolov8-to-coco          parse ultrality yolov8 data.yaml to prepare a coco dataset                                                                        │
-#╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+# ...
 ```
-**Import as package**
+
+**🐍 Import as package**
 ```python
 # e.g.
 from algo_qol.algo.det.yolo.yolo_utils import yolo_analyse
 ```
 
-## Reference
+## 📚 Reference
 [CLI API](./docs/cli.md)
