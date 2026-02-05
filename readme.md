@@ -1,13 +1,32 @@
 # QOL for Algo Dev
 
 All in one of QOL for Algo Developer
-## Installation
+
+## Quick Start
+### Agent skill installation(Recommend)
+Install and use with LLM CLI(it will install the package automatically)
+
+- Gemini Skill Installation
+```bash
+gemini skills install https://github.com/mightycatty/algo_qol.git --path agent/skills/algo-qol
+```
+- Other CLI Installation
+
+`TODO`
+
+### PIP Installation
 ```bash
 pip install -r requirement.txt
 pip install -e .
 ```
-## usage
-Use as CLI
+### Usage Example
+**Gemini CLI**
+```bash
+gemini -p "Use algo-qol to reformat all images in the ./images folder to JPG format."
+gemini -p "Use algo-qol to split the YOLO dataset at ./yolo_dataset.txt into training and validation sets with a 9:1 ratio."
+```
+
+**CMD CLI**
 ```bash
 > algo-qol --help
 
@@ -32,11 +51,11 @@ Use as CLI
 #│ yolov8-to-coco          parse ultrality yolov8 data.yaml to prepare a coco dataset                                                                        │
 #╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-Import as package
+**Import as package**
 ```python
-# example, when to use yolo utilities
-from algo_qol.data.detection.yolo_utils import *
+# e.g.
+from algo_qol.algo.det.yolo.yolo_utils import yolo_analyse
 ```
 
-## TODO
-- [ ] improve CLI respond speed
+## Reference
+[CLI API](./docs/cli.md)
