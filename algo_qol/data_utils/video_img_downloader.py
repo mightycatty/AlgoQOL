@@ -152,7 +152,7 @@ class Downloader(object):
                 save_name = save_name.replace('/', '-')
             imgpath = os.path.join(save_f, save_name)
             format = imgpath.split('.')[-1]
-            if format.lower() not in ['jpg', 'jpeg', 'png']:
+            if format.lower() not in ['jpg', 'jpeg', 'png', 'webp', 'gif', 'tiff', 'bmp', 'jfif', 'mp4', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'webm']:
                 imgpath += '.jpg'
             imgs.append(img_url)
             imgs.append(imgpath)
