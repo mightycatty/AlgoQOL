@@ -63,12 +63,15 @@ def download_img_to_folder(img_url, save_f,
     if os.path.exists(imgpath):
         return imgpath
     if username is None or password is None:
-        r = requests.get(img_url)
+        r = requests.get(img_url, stream=True, timeout=60)
     else:
-        r = requests.get(img_url, auth=HTTPBasicAuth(username, password))
+        r = requests.get(img_url, auth=HTTPBasicAuth(username, password), stream=True, timeout=60)
     try:
+        r.raise_for_status()
         with open(imgpath, 'wb') as f:
-            f.write(r.content)
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
         if reformat is not None:
             img = cv2.imread(imgpath)
             os.remove(imgpath)
@@ -76,6 +79,8 @@ def download_img_to_folder(img_url, save_f,
             cv2.imwrite(imgpath, img)
         return imgpath
     except Exception as e:
+        if os.path.exists(imgpath):
+            os.remove(imgpath)
         logger.error('fail to download image:{}'.format(img_url) + ' / ' + str(e))
         return None
 
@@ -83,12 +88,17 @@ def download_img_to_folder(img_url, save_f,
 def download_img(img_url, save_path):
     if os.path.exists(save_path):
         return save_path
-    r = requests.get(img_url)
     try:
+        r = requests.get(img_url, stream=True, timeout=60)
+        r.raise_for_status()
         with open(save_path, 'wb') as f:
-            f.write(r.content)
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
         return save_path
     except Exception as e:
+        if os.path.exists(save_path):
+            os.remove(save_path)
         print(e)
         return None
 
@@ -106,13 +116,17 @@ class Downloader(object):
     def download(img_url, imgpath):
         if os.path.exists(imgpath):
             return
-        r = requests.get(img_url)
         try:
+            r = requests.get(img_url, stream=True, timeout=60)
+            r.raise_for_status()
             with open(imgpath, 'wb') as f:
-                f.write(r.content)
-        except:
-            pass
-            # print('savefail\t %s' % img_url)
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        except Exception as e:
+            if os.path.exists(imgpath):
+                os.remove(imgpath)
+            raise e
 
     def get_img_url_generate(self, txt_src, save_f, col_index=0):
         if not isinstance(txt_src, list):
@@ -150,8 +164,10 @@ class Downloader(object):
             else:
                 save_name = img_url.replace('https://', '')
                 save_name = save_name.replace('/', '-')
+            if '?' in save_name:
+                save_name = save_name.split('?')[0]
             imgpath = os.path.join(save_f, save_name)
-            format = imgpath.split('.')[-1]
+            format = imgpath.split('.')[-1] if '.' in imgpath else ''
             if format.lower() not in ['jpg', 'jpeg', 'png', 'webp', 'gif', 'tiff', 'bmp', 'jfif', 'mp4', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'webm']:
                 imgpath += '.jpg'
             imgs.append(img_url)
