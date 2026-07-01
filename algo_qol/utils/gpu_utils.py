@@ -3,6 +3,8 @@
 # @Email   : heshuai.sec@gmail.com
 import logging
 import os
+import queue
+import threading
 
 import cv2
 
@@ -318,7 +320,7 @@ class VideoWriter:
                 cv2.imshow('video_writer', image)
                 cv2.waitKey(1)
         except Exception as e:
-            logging.error('write frame error:{}').format(e)
+            logging.error(f'write frame error:{e}')
             return False
         return True
 
@@ -326,9 +328,56 @@ class VideoWriter:
         self._video_writer.release()
 
 
-# TODO: threading to save img to disk
 class ImgSaver:
-    pass
+    def __init__(self, num_workers=4):
+        self.queue = queue.Queue()
+        self.num_workers = num_workers
+        self.workers = []
+        for _ in range(num_workers):
+            t = threading.Thread(target=self._worker)
+            t.daemon = True
+            t.start()
+            self.workers.append(t)
+
+    def _worker(self):
+        while True:
+            item = self.queue.get()
+            if item is None:
+                self.queue.task_done()
+                break
+            img_path, img = item
+            try:
+                # Ensure directory exists
+                dir_name = os.path.dirname(img_path)
+                if dir_name:
+                    os.makedirs(dir_name, exist_ok=True)
+                cv2.imwrite(img_path, img)
+            except Exception as e:
+                logging.error(f'ImgSaver error saving {img_path}: {e}')
+            finally:
+                self.queue.task_done()
+
+    def save(self, img_path, img):
+        self.queue.put((img_path, img))
+
+    def close(self):
+        if not hasattr(self, 'workers') or not self.workers:
+            return
+        # Stop workers
+        for _ in range(len(self.workers)):
+            self.queue.put(None)
+        for t in self.workers:
+            t.join()
+        self.workers = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        self.close()
 
 
 def get_latest_file(folder):
